@@ -35,5 +35,8 @@ jobs:
           key: ${{ secrets.SSH_TOKEN }}
           script: |
             cd /root/enimi
+            git pull
             docker-compose down
             docker-compose up -d
+            docker ps
+            exit
