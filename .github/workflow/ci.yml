@@ -34,6 +34,6 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_TOKEN }}
           script: |
-            cd /root/enimi1602
+            cd /root/enimi
             docker-compose down
             docker-compose up -d
