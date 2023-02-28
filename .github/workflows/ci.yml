@@ -3,43 +3,22 @@ name: "Django deploy workflow"
 on:
   push:
     branches: [ master ]
+  workflow_dispatch:
 
 jobs:
-  deploy-job:
+  run_pull:
+    name: run pull
     runs-on: ubuntu-latest
     
-    services:
-      db:
-        image: postgres:14.6
-        env:
-          POSTGRES_DB: enimi_db
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: root
-        ports:
-          - '5432:5432'
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 5s
-          --health-timeout 10s
-          --health-retries 5
-    
     steps:
-      - name: Install ssh key
-        uses: shimataro/ssh-key-action@v2
-        with:
-          key: ${{ secrets.SSH_TOKEN }}
-          known_hosts: 'any_host'
-      - name: test and pull repo
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_TOKEN }}
-          port: 22
-          script: |
-            cd enimi
-            git pull
-            docker-compose down
-            docker-compose up -d
-            docker ps
-            exit
+    - name: install ssh keys
+      # check this thread to understand why its needed:
+      # https://stackoverflow.com/a/70447517
+      run: |
+        install -m 600 -D /dev/null ~/.ssh/id_rsa
+        echo "${{ secrets.SSH_TOKEN }}" > ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.SSH_HOST }} > ~/.ssh/known_hosts
+    - name: connect and pull
+      run: ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ secrets.WORK_DIR }} && git checkout ${{ secrets.MAIN_BRANCH }} && git pull && exit"
+    - name: cleanup
+      run: rm -rf ~/.ssh
