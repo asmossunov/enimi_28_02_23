@@ -1,12 +1,13 @@
-name: Django CI/CD
+name: "Django deploy workflow"
 
 on:
-  pull_request:
+  push:
     branches: [ master ]
 
 jobs:
-  build-and-test:
+  deploy-job:
     runs-on: ubuntu-latest
+    
     services:
       db:
         image: postgres:14.6
@@ -21,20 +22,22 @@ jobs:
           --health-interval 5s
           --health-timeout 10s
           --health-retries 5
+    
     steps:
-     # - uses: actions/checkout@v2
-     # - name: Build and Test
-      #  run: |
-        #  docker-compose build
-         # docker-compose run --rm web sh -c "python manage.py migrate && python manage.py test"
-      - name: Deploy to server
+      - name: Install ssh key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_TOKEN }}
+          known_hosts: 'any_host'
+      - name: test and pull repo
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_TOKEN }}
+          port: 22
           script: |
-            cd /root/enimi
+            cd enimi
             git pull
             docker-compose down
             docker-compose up -d
